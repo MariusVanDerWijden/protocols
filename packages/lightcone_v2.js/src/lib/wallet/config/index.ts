@@ -169,6 +169,14 @@ function getWallets() {
   return data.wallets;
 }
 
+function getWithdrawFee() {
+  return config.fee;
+}
+
+function getWithdrawFeeToken() {
+  return config.feeToken;
+}
+
 export default {
   getTokenBySymbol,
   getTokenByAddress,
@@ -190,5 +198,7 @@ export default {
   getExchangeAddress,
   getWallets,
   fromWEI,
-  toWEI
+  toWEI,
+  getWithdrawFee,
+  getWithdrawFeeToken
 };
