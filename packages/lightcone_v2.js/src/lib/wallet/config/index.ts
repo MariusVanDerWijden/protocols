@@ -28,8 +28,8 @@ function getExchangeId() {
   return config.exchangeId;
 }
 
-function getWalletId() {
-  return config.walletAddressId;
+function getLabel() {
+  return config.label;
 }
 
 function getMaxFeeBips() {
@@ -180,7 +180,7 @@ export default {
   isinWhiteList,
   getChainId,
   getExchangeId,
-  getWalletId,
+  getLabel,
   getMaxFeeBips,
   isSupportedMarket,
   getMarketsByTokenR,

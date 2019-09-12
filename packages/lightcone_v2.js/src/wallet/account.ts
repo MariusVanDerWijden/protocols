@@ -2,7 +2,6 @@ import { exchange } from "..";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
-
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
@@ -132,8 +131,6 @@ export class Account {
    * @param accountId: account ID in exchange
    * @param tokenS: symbol or hex address of token sell
    * @param tokenB: symbol or hex address of token buy
-   * @param tokenSId: token sell ID in exchange
-   * @param tokenBId: token buy ID in exchange
    * @param tradingPubKeyX: trading public key X of account, decimal string
    * @param tradingPubKeyY: trading public key Y of account, decimal string
    * @param tradingPrivKey: trading private key of account, decimal string
@@ -148,8 +145,6 @@ export class Account {
     accountId: number,
     tokenS: string,
     tokenB: string,
-    tokenSId: number,
-    tokenBId: number,
     tradingPubKeyX: string,
     tradingPubKeyY: string,
     tradingPrivKey: string,
@@ -162,23 +157,15 @@ export class Account {
     try {
       const order = new OrderInfo();
       order.owner = owner;
-      order.accountId = accountId;
+      order.account.accountId = accountId;
+      order.account.keyPair.publicKeyX = tradingPubKeyX;
+      order.account.keyPair.publicKeyY = tradingPubKeyY;
+      order.account.keyPair.secretKey = tradingPrivKey;
+
       order.tokenS = tokenS;
       order.tokenB = tokenB;
-      order.tokenSId = tokenSId;
-      order.tokenBId = tokenBId;
-      order.tradingPubKeyX = tradingPubKeyX;
-      order.tradingPubKeyY = tradingPubKeyY;
-      order.tradingPrivKey = tradingPrivKey;
-
-      let tokenSell = config.getTokenBySymbol(tokenS);
-      let tokenBuy = config.getTokenBySymbol(tokenB);
-      let bigNumber = fm.toBig(amountS).times("1e" + tokenSell.digits);
-      order.amountSInBN = fm.toBN(bigNumber);
-      bigNumber = fm.toBig(amountB).times(fm.toBig("1e" + tokenBuy.digits));
-      order.amountBInBN = fm.toBN(bigNumber);
-      order.amountS = order.amountSInBN.toString(10);
-      order.amountB = order.amountBInBN.toString(10);
+      order.amountS = amountS;
+      order.amountB = amountB;
 
       order.orderId = orderId;
       order.validSince = Math.floor(validSince);
