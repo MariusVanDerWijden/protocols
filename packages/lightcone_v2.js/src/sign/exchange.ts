@@ -4,9 +4,22 @@ import { performance } from "perf_hooks";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Transaction from "../lib/wallet/ethereum/transaction";
-import { updateHost } from "../lib/wallet/ethereum/utils";
 import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
-import { OrderInfo, WithdrawalRequest } from "../model/types";
+import {
+  CancelRequest,
+  GetAPIKeyRequest,
+  GetDexNonceRequest,
+  GetOrderDetailRequest,
+  GetOrderIdRequest,
+  GetOrdersRequest,
+  GetUserActionsRequest,
+  GetUserBalanceRequest,
+  GetUserFeeRateRequest,
+  GetUserTradesRequest,
+  GetUserTransactionsRequest,
+  OrderRequest,
+  WithdrawalRequest
+} from "../model/types";
 import * as Poseidon from "../lib/sign/poseidon";
 
 const assert = require("assert");
@@ -14,7 +27,7 @@ const assert = require("assert");
 export class Exchange {
   private currentWalletAccount: WalletAccount;
 
-  public async createOrUpdateAccount(
+  public createOrUpdateAccount(
     wallet: WalletAccount,
     password: string,
     nonce: number,
@@ -23,7 +36,7 @@ export class Exchange {
     try {
       const keyPair = EdDSA.generateKeyPair(wallet.getAddress() + password);
       this.currentWalletAccount = wallet;
-      const transaction = await this.createAccountAndDeposit(
+      const transaction = this.createAccountAndDeposit(
         keyPair.publicKeyX,
         keyPair.publicKeyY,
         "",
@@ -41,7 +54,7 @@ export class Exchange {
     }
   }
 
-  private async createAccountAndDeposit(
+  private createAccountAndDeposit(
     publicX: string,
     publicY: string,
     symbol: string,
@@ -86,7 +99,7 @@ export class Exchange {
     }
   }
 
-  public async deposit(
+  public deposit(
     wallet: WalletAccount,
     symbol: string,
     amount: string,
@@ -139,7 +152,7 @@ export class Exchange {
     }
   }
 
-  public async withdraw(
+  public withdraw(
     wallet: WalletAccount,
     symbol: string,
     amount: string,
@@ -170,7 +183,9 @@ export class Exchange {
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
           gasPrice: fm.toHex(fm.fromGWEI(gasPrice)),
-          gasLimit: fm.toHex(config.getGasLimitByType("withdrawFrom").gasInWEI)
+          gasLimit: fm.toHex(
+            config.getGasLimitByType("onchainWithdrawal").gasInWEI
+          )
         });
       }
     } catch (err) {
@@ -179,25 +194,28 @@ export class Exchange {
     }
   }
 
-  public setupWithdrawal(withdrawal: WithdrawalRequest) {
-    let token = config.getTokenBySymbol(withdrawal.token);
+  public submitWithdrawal(withdrawal: WithdrawalRequest) {
+    let token, feeToken;
+    if (!withdrawal.token.startsWith("0x")) {
+      token = config.getTokenBySymbol(withdrawal.token);
+    } else {
+      token = config.getTokenByAddress(withdrawal.token);
+    }
+    if (!withdrawal.feeToken.startsWith("0x")) {
+      feeToken = config.getTokenBySymbol(withdrawal.feeToken);
+    } else {
+      feeToken = config.getTokenByAddress(withdrawal.feeToken);
+    }
     let bigNumber = fm.toBig(withdrawal.amount).times("1e" + token.digits);
     withdrawal.tokenId = token.id;
+    withdrawal.token = token.symbol;
     withdrawal.amountInBN = fm.toBN(bigNumber);
 
-    const feeToken =
-      withdrawal.feeToken !== undefined
-        ? withdrawal.feeToken
-        : config.getWithdrawFeeToken();
-    token = config.getTokenBySymbol(feeToken);
-    const fee =
-      withdrawal.fee !== undefined ? withdrawal.fee : config.getWithdrawFee();
-    bigNumber = fm.toBig(fee).times("1e" + token.digits);
-
-    withdrawal.feeToken = feeToken;
-    withdrawal.feeTokenID = token.id;
-    withdrawal.fee = fee;
+    bigNumber = fm.toBig(withdrawal.fee).times("1e" + feeToken.digits);
+    withdrawal.feeTokenId = token.id;
+    withdrawal.feeToken = feeToken.symbol;
     withdrawal.feeInBN = fm.toBN(bigNumber);
+
     withdrawal.label =
       withdrawal.label !== undefined ? withdrawal.label : config.getLabel();
     return this.signWithdrawal(withdrawal);
@@ -216,7 +234,7 @@ export class Exchange {
       account.accountId,
       withdrawal.tokenId,
       withdrawal.amountInBN,
-      withdrawal.feeTokenID,
+      withdrawal.feeTokenId,
       withdrawal.feeInBN,
       withdrawal.label,
       account.nonce
@@ -236,7 +254,7 @@ export class Exchange {
     return withdrawal;
   }
 
-  public signOrder(order: OrderInfo) {
+  public signOrder(order: OrderRequest) {
     if (order.signature !== undefined) {
       return;
     }
@@ -282,16 +300,20 @@ export class Exchange {
     return order;
   }
 
-  public async setupOrder(order: OrderInfo) {
-    const tokenBuy = config.getTokenBySymbol(order.tokenB);
-    const tokenSell = config.getTokenBySymbol(order.tokenS);
-
+  public setupOrder(order: OrderRequest) {
+    let tokenBuy, tokenSell;
     if (!order.tokenS.startsWith("0x")) {
-      order.tokenS = tokenSell.address;
+      tokenSell = config.getTokenBySymbol(order.tokenS);
+    } else {
+      tokenSell = config.getTokenByAddress(order.tokenS);
     }
     if (!order.tokenB.startsWith("0x")) {
-      order.tokenB = tokenBuy.address;
+      tokenBuy = config.getTokenBySymbol(order.tokenB);
+    } else {
+      tokenBuy = config.getTokenByAddress(order.tokenB);
     }
+    order.tokenS = tokenSell.address;
+    order.tokenB = tokenBuy.address;
     order.tokenSId = tokenSell.id;
     order.tokenBId = tokenBuy.id;
 
@@ -330,12 +352,303 @@ export class Exchange {
     return Math.floor(Math.random() * max);
   }
 
-  public async submitOrder(wallet: WalletAccount, orderInfo: OrderInfo) {
+  public submitOrder(wallet: WalletAccount, request: OrderRequest) {
     this.currentWalletAccount = wallet;
-    return await this.setupOrder(orderInfo);
+    return this.setupOrder(request);
   }
 
-  public async cancelOrder(orderInfo: OrderInfo) {}
+  public signCancel(cancel: CancelRequest) {
+    if (cancel.signature !== undefined) {
+      return;
+    }
+    const account = cancel.account;
+    const hasher = Poseidon.createHash(9, 6, 53);
+
+    // Calculate hash
+    const inputs = [
+      config.getExchangeId(),
+      account.accountId,
+      cancel.orderTokenId,
+      cancel.orderId,
+      cancel.feeTokenId,
+      cancel.feeInBN,
+      cancel.label,
+      account.nonce
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    cancel.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, cancel.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return cancel;
+  }
+
+  public submitCancel(cancel: CancelRequest) {
+    let orderToken, feeToken;
+    if (!cancel.orderToken.startsWith("0x")) {
+      orderToken = config.getTokenBySymbol(cancel.orderToken);
+    } else {
+      orderToken = config.getTokenByAddress(cancel.orderToken);
+    }
+    if (!cancel.feeToken.startsWith("0x")) {
+      feeToken = config.getTokenBySymbol(cancel.feeToken);
+    } else {
+      feeToken = config.getTokenByAddress(cancel.feeToken);
+    }
+    cancel.feeTokenId = feeToken.id;
+    cancel.orderTokenId = orderToken.id;
+
+    let bigNumber = fm.toBig(cancel.fee).times("1e" + feeToken.digits);
+    cancel.feeInBN = fm.toBN(bigNumber);
+
+    cancel.label =
+      cancel.label !== undefined ? cancel.label : config.getLabel();
+    return this.signCancel(cancel);
+  }
+
+  public signGetApiKey(request: GetAPIKeyRequest) {
+    if (request.signature !== undefined) {
+      return;
+    }
+    const account = request.account;
+    const hasher = Poseidon.createHash(4, 6, 53);
+
+    // Calculate hash
+    const inputs = [
+      account.accountId,
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    request.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, request.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return request;
+  }
+
+  public signGetDexNonce(request: GetDexNonceRequest) {
+    if (request.signature !== undefined) {
+      return;
+    }
+    const account = request.account;
+    const hasher = Poseidon.createHash(2, 6, 53);
+
+    // Calculate hash
+    const inputs = [account.accountId];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    request.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, request.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return request;
+  }
+
+  public signGetOrderId(request: GetOrderIdRequest) {
+    if (request.signature !== undefined) {
+      return;
+    }
+    const account = request.account;
+    const hasher = Poseidon.createHash(3, 6, 53);
+    if (!request.tokenSell.startsWith("0x")) {
+      request.tokenSId = config.getTokenBySymbol(request.tokenSell).id;
+    } else {
+      request.tokenSId = config.getTokenByAddress(request.tokenSell).id;
+    }
+    // Calculate hash
+    const inputs = [account.accountId, request.tokenSId];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    request.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, request.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return request;
+  }
+
+  public signGetOrderDetail(request: GetOrderDetailRequest) {
+    if (request.signature !== undefined) {
+      return;
+    }
+    const account = request.account;
+    const hasher = Poseidon.createHash(3, 6, 53);
+
+    // Calculate hash
+    const inputs = [account.accountId, request.orderHash];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    request.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, request.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return request;
+  }
+
+  public signGetOrders(request: GetOrdersRequest) {
+    if (request.signature !== undefined) {
+      return;
+    }
+    const account = request.account;
+    const hasher = Poseidon.createHash(2, 6, 53);
+
+    // Calculate hash
+    const inputs = [account.accountId];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    request.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, request.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return request;
+  }
+
+  public signGetUserBalance(request: GetUserBalanceRequest) {
+    if (request.signature !== undefined) {
+      return;
+    }
+    const account = request.account;
+    const hasher = Poseidon.createHash(2, 6, 53);
+
+    // Calculate hash
+    const inputs = [account.accountId];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    request.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, request.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return request;
+  }
+
+  public signGetUserTransactions(request: GetUserTransactionsRequest) {
+    if (request.signature !== undefined) {
+      return;
+    }
+    const account = request.account;
+    const hasher = Poseidon.createHash(2, 6, 53);
+
+    // Calculate hash
+    const inputs = [account.accountId];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    request.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, request.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return request;
+  }
+
+  public signUserActions(request: GetUserActionsRequest) {
+    if (request.signature !== undefined) {
+      return;
+    }
+    const account = request.account;
+    const hasher = Poseidon.createHash(2, 6, 53);
+
+    // Calculate hash
+    const inputs = [account.accountId];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    request.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, request.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return request;
+  }
+
+  public signGetUserTrades(request: GetUserTradesRequest) {
+    if (request.signature !== undefined) {
+      return;
+    }
+    const account = request.account;
+    const hasher = Poseidon.createHash(2, 6, 53);
+
+    // Calculate hash
+    const inputs = [account.accountId];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    request.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, request.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return request;
+  }
+
+  public signGetUserFeeRate(request: GetUserFeeRateRequest) {
+    if (request.signature !== undefined) {
+      return;
+    }
+    const account = request.account;
+    const hasher = Poseidon.createHash(2, 6, 53);
+
+    // Calculate hash
+    const inputs = [account.accountId];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    request.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, request.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    return request;
+  }
 }
 
 export const exchange: Exchange = new Exchange();

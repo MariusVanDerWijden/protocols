@@ -3,7 +3,6 @@ import { exchange } from "../src";
 import { fromPrivateKey } from "../src/lib/wallet/ethereum/walletAccount";
 import assert = require("assert");
 
-// MUST DONE FIRST: docker run -p 8545:8545 kongliangzhong/loopringv3-contracts-beta2-prepared:0.9
 describe("eddsa sign test", function() {
   this.timeout(1000);
 

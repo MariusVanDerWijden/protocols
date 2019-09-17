@@ -31,7 +31,7 @@ export class WithdrawalRequest {
   amount: string;
   amountInBN?: BN;
   feeToken: string;
-  feeTokenID?: number;
+  feeTokenId?: number;
   fee: string;
   feeInBN?: BN;
   label?: number;
@@ -39,7 +39,7 @@ export class WithdrawalRequest {
   hash?: string;
 }
 
-export class OrderInfo {
+export class OrderRequest {
   owner: string;
   account: DexAccount;
   exchangeId: number;
@@ -71,4 +71,95 @@ export class OrderInfo {
   signature?: Signature;
 
   [key: string]: any;
+}
+
+export class CancelRequest {
+  account: DexAccount;
+  orderToken: string;
+  orderTokenId?: number;
+  orderId: number;
+  feeToken: string;
+  feeTokenId?: number;
+  fee: string;
+  feeInBN?: BN;
+  label?: number;
+  signature?: Signature;
+}
+
+export class GetAPIKeyRequest {
+  account: DexAccount;
+  signature?: Signature;
+}
+
+export class GetDexNonceRequest {
+  account: DexAccount;
+  signature?: Signature;
+}
+
+export class GetOrderIdRequest {
+  account: DexAccount;
+  tokenSell: string;
+  tokenSId?: number;
+  signature?: Signature;
+}
+
+export class GetOrderDetailRequest {
+  account: DexAccount;
+  orderHash: string;
+  signature?: Signature;
+}
+
+export class GetOrdersRequest {
+  account: DexAccount;
+  market?: string;
+  statuses?: [string];
+  start?: number;
+  end?: number;
+  fromHash?: string;
+  limit?: number;
+  signature?: Signature;
+}
+
+export class GetUserBalanceRequest {
+  account: DexAccount;
+  tokens?: [string];
+  tokenIds?: [number];
+  signature?: Signature;
+}
+
+export class GetUserTransactionsRequest {
+  account: DexAccount;
+  statuses?: [string];
+  types?: [string];
+  start?: number;
+  end?: number;
+  fromHash?: string;
+  limit?: number;
+  signature?: Signature;
+}
+
+export class GetUserActionsRequest {
+  account: DexAccount;
+  statuses?: [string];
+  types?: [string];
+  start?: number;
+  end?: number;
+  fromHash?: string;
+  limit?: number;
+  signature?: Signature;
+}
+
+export class GetUserTradesRequest {
+  account: DexAccount;
+  orderHash?: string;
+  market?: string;
+  fromId?: string;
+  limit?: number;
+  signature?: Signature;
+}
+
+export class GetUserFeeRateRequest {
+  account: DexAccount;
+  market?: string;
+  signature?: Signature;
 }
