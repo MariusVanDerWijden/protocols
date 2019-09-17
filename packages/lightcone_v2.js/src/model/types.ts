@@ -153,7 +153,7 @@ export class GetUserTradesRequest {
   account: DexAccount;
   orderHash?: string;
   market?: string;
-  fromId?: string;
+  fromId?: number;
   limit?: number;
   signature?: Signature;
 }

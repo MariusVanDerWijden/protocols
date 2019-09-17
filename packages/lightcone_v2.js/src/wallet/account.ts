@@ -413,12 +413,22 @@ export class Account {
    * @param tradingPubKeyX: trading public key X of account, decimal string
    * @param tradingPubKeyY: trading public key Y of account, decimal string
    * @param tradingPrivKey: trading private key of account, decimal string
+   * @param statuses: [OPTION] specified statuses of user orders
+   * @param start: [OPTION] beginning period of user orders
+   * @param end: [OPTION] ending period of user orders
+   * @param fromHash: [OPTION] from where of user orders
+   * @param limit: [OPTION] how many records of user orders
    */
   public getOrders(
     accountId: number,
     tradingPubKeyX: string,
     tradingPubKeyY: string,
-    tradingPrivKey: string
+    tradingPrivKey: string,
+    statuses?: [string],
+    start?: number,
+    end?: number,
+    fromHash?: string,
+    limit?: number
   ) {
     try {
       const request = new GetOrdersRequest();
@@ -429,6 +439,11 @@ export class Account {
       request.account.keyPair.publicKeyX = tradingPubKeyX;
       request.account.keyPair.publicKeyY = tradingPubKeyY;
       request.account.keyPair.secretKey = tradingPrivKey;
+      request.statuses = statuses;
+      request.start = start;
+      request.end = end;
+      request.fromHash = fromHash;
+      request.limit = limit;
       return exchange.signGetOrders(request);
     } catch (e) {
       throw e;
@@ -441,12 +456,14 @@ export class Account {
    * @param tradingPubKeyX: trading public key X of account, decimal string
    * @param tradingPubKeyY: trading public key Y of account, decimal string
    * @param tradingPrivKey: trading private key of account, decimal string
+   * @param tokenIds: [OPTION] specified tokens of user balances
    */
   public getUserBalance(
     accountId: number,
     tradingPubKeyX: string,
     tradingPubKeyY: string,
-    tradingPrivKey: string
+    tradingPrivKey: string,
+    tokenIds: [string]
   ) {
     try {
       const request = new GetUserBalanceRequest();
@@ -469,12 +486,22 @@ export class Account {
    * @param tradingPubKeyX: trading public key X of account, decimal string
    * @param tradingPubKeyY: trading public key Y of account, decimal string
    * @param tradingPrivKey: trading private key of account, decimal string
+   * @param statuses: [OPTION] specified statuses of user trades
+   * @param start: [OPTION] beginning period of user trades
+   * @param end: [OPTION] ending period of user trades
+   * @param fromHash: [OPTION] from where of user trades
+   * @param limit: [OPTION] how many records of user trades
    */
   public getUserTransactions(
     accountId: number,
     tradingPubKeyX: string,
     tradingPubKeyY: string,
-    tradingPrivKey: string
+    tradingPrivKey: string,
+    statuses?: [string],
+    start?: number,
+    end?: number,
+    fromHash?: string,
+    limit?: number
   ) {
     try {
       const request = new GetUserTransactionsRequest();
@@ -485,6 +512,11 @@ export class Account {
       request.account.keyPair.publicKeyX = tradingPubKeyX;
       request.account.keyPair.publicKeyY = tradingPubKeyY;
       request.account.keyPair.secretKey = tradingPrivKey;
+      request.statuses = statuses;
+      request.start = start;
+      request.end = end;
+      request.fromHash = fromHash;
+      request.limit = limit;
       return exchange.signGetUserTransactions(request);
     } catch (e) {
       throw e;
@@ -497,12 +529,22 @@ export class Account {
    * @param tradingPubKeyX: trading public key X of account, decimal string
    * @param tradingPubKeyY: trading public key Y of account, decimal string
    * @param tradingPrivKey: trading private key of account, decimal string
+   * @param statuses: [OPTION] specified statuses of user trades
+   * @param start: [OPTION] beginning period of user trades
+   * @param end: [OPTION] ending period of user trades
+   * @param fromHash: [OPTION] from where of user trades
+   * @param limit: [OPTION] how many records of user trades
    */
   public getUserActions(
     accountId: number,
     tradingPubKeyX: string,
     tradingPubKeyY: string,
-    tradingPrivKey: string
+    tradingPrivKey: string,
+    statuses?: [string],
+    start?: number,
+    end?: number,
+    fromHash?: string,
+    limit?: number
   ) {
     try {
       const request = new GetUserActionsRequest();
@@ -513,6 +555,11 @@ export class Account {
       request.account.keyPair.publicKeyX = tradingPubKeyX;
       request.account.keyPair.publicKeyY = tradingPubKeyY;
       request.account.keyPair.secretKey = tradingPrivKey;
+      request.statuses = statuses;
+      request.start = start;
+      request.end = end;
+      request.fromHash = fromHash;
+      request.limit = limit;
       return exchange.signUserActions(request);
     } catch (e) {
       throw e;
@@ -525,12 +572,18 @@ export class Account {
    * @param tradingPubKeyX: trading public key X of account, decimal string
    * @param tradingPubKeyY: trading public key Y of account, decimal string
    * @param tradingPrivKey: trading private key of account, decimal string
+   * @param market: [OPTION] specified market of user trades
+   * @param fromId: [OPTION] from where of user trades
+   * @param limit: [OPTION] how many records of user trades
    */
   public getUserTrades(
     accountId: number,
     tradingPubKeyX: string,
     tradingPubKeyY: string,
-    tradingPrivKey: string
+    tradingPrivKey: string,
+    market: string,
+    fromId?: number,
+    limit?: number
   ) {
     try {
       const request = new GetUserTradesRequest();
@@ -541,6 +594,9 @@ export class Account {
       request.account.keyPair.publicKeyX = tradingPubKeyX;
       request.account.keyPair.publicKeyY = tradingPubKeyY;
       request.account.keyPair.secretKey = tradingPrivKey;
+      request.market = market;
+      request.fromId = fromId;
+      request.limit = limit;
       return exchange.signGetUserTrades(request);
     } catch (e) {
       throw e;
@@ -553,12 +609,14 @@ export class Account {
    * @param tradingPubKeyX: trading public key X of account, decimal string
    * @param tradingPubKeyY: trading public key Y of account, decimal string
    * @param tradingPrivKey: trading private key of account, decimal string
+   * @param market: [OPTION] user fee rate of specified market
    */
   public getUserFeeRate(
     accountId: number,
     tradingPubKeyX: string,
     tradingPubKeyY: string,
-    tradingPrivKey: string
+    tradingPrivKey: string,
+    market?: string
   ) {
     try {
       const request = new GetUserFeeRateRequest();
