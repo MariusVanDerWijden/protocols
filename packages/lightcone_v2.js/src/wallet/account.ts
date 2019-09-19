@@ -150,8 +150,8 @@ export class Account {
    * @param nonce: DEX nonce of account
    * @param token: token symbol or address to withdraw
    * @param amount: amount to withdraw, in decimal string. e.g. '15'
-   * @param feeToken: fee token symbol or address to withdraw
-   * @param fee: withdrawal fee, in decimal string. e.g. '15'
+   * @param tokenF: fee token symbol or address to withdraw
+   * @param amountF: withdrawal fee, in decimal string. e.g. '15'
    * @param label: [OPTIONAL] label used in protocol
    */
   public offchainWithdrawal(
@@ -162,8 +162,8 @@ export class Account {
     nonce: number,
     token: string,
     amount: string,
-    feeToken: string,
-    fee: string,
+    tokenF: string,
+    amountF: string,
     label?: number
   ) {
     try {
@@ -178,8 +178,8 @@ export class Account {
       withdraw.account.nonce = nonce;
       withdraw.token = token;
       withdraw.amount = amount;
-      withdraw.feeToken = feeToken;
-      withdraw.fee = fee;
+      withdraw.tokenF = tokenF;
+      withdraw.amountF = amountF;
       withdraw.label = label;
       return exchange.submitWithdrawal(withdraw);
     } catch (e) {
@@ -253,8 +253,8 @@ export class Account {
    * @param nonce: DEX nonce of account
    * @param orderToken: token symbol or address of cancel
    * @param orderId: specified order id to cancel
-   * @param feeToken: fee token symbol or address of cancel
-   * @param fee: cancel fee, e.g. '15'
+   * @param tokenF: amountF token symbol or address of cancel
+   * @param amountF: cancel amountF, e.g. '15'
    * @param label: [OPTIONAL] label used in protocol
    */
   public submitCancel(
@@ -265,8 +265,8 @@ export class Account {
     nonce: number,
     orderToken: string,
     orderId: number,
-    feeToken: string,
-    fee: string,
+    tokenF: string,
+    amountF: string,
     label?: number
   ) {
     try {
@@ -281,8 +281,8 @@ export class Account {
       cancel.account.nonce = nonce;
       cancel.orderToken = orderToken;
       cancel.orderId = orderId;
-      cancel.feeToken = feeToken;
-      cancel.fee = fee;
+      cancel.tokenF = tokenF;
+      cancel.amountF = amountF;
       cancel.label = label;
       return exchange.submitCancel(cancel);
     } catch (e) {
@@ -369,7 +369,7 @@ export class Account {
       request.account.keyPair.publicKeyX = tradingPubKeyX;
       request.account.keyPair.publicKeyY = tradingPubKeyY;
       request.account.keyPair.secretKey = tradingPrivKey;
-      request.tokenSell = tokenSell;
+      request.tokenS = tokenSell;
       return exchange.signGetOrderId(request);
     } catch (e) {
       throw e;
@@ -463,7 +463,7 @@ export class Account {
     tradingPubKeyX: string,
     tradingPubKeyY: string,
     tradingPrivKey: string,
-    tokenIds: [string]
+    tokenIds?: [string]
   ) {
     try {
       const request = new GetUserBalanceRequest();
@@ -581,7 +581,7 @@ export class Account {
     tradingPubKeyX: string,
     tradingPubKeyY: string,
     tradingPrivKey: string,
-    market: string,
+    market?: string,
     fromId?: number,
     limit?: number
   ) {

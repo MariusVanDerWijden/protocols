@@ -64,13 +64,12 @@ function getTokens() {
   return config.tokens;
 }
 
-function fromWEI(symbol, valueInWEI, precision = 4) {
+function fromWEI(symbol, valueInWEI) {
   const token = getTokenBySymbol(symbol);
   if (!token) {
     return 0;
   }
-  const value = fm.toBig(valueInWEI).div("1e" + token.digits);
-  return value.toNumber().toFixed(precision);
+  return fm.toBig(valueInWEI).div("1e" + token.digits);
 }
 
 function toWEI(symbol, value) {
@@ -78,8 +77,7 @@ function toWEI(symbol, value) {
   if (!token) {
     return 0;
   }
-  const valueInBN = fm.toBig(value).times("1e" + token.digits);
-  return valueInBN.toString(10);
+  return fm.toBig(value).times("1e" + token.digits);
 }
 
 function getMarketByPair(pair) {

@@ -30,10 +30,10 @@ export class WithdrawalRequest {
   tokenId?: number;
   amount: string;
   amountInBN?: BN;
-  feeToken: string;
-  feeTokenId?: number;
-  fee: string;
-  feeInBN?: BN;
+  tokenF: string;
+  tokenFId?: number;
+  amountF: string;
+  amountFInBN?: BN;
   label?: number;
   signature?: Signature;
   hash?: string;
@@ -58,7 +58,7 @@ export class OrderRequest {
 
   label: number;
 
-  allOrNone: boolean;
+  allOrNone?: boolean;
   validSince: number;
   validUntil: number;
   maxFeeBips: number;
@@ -78,10 +78,10 @@ export class CancelRequest {
   orderToken: string;
   orderTokenId?: number;
   orderId: number;
-  feeToken: string;
-  feeTokenId?: number;
-  fee: string;
-  feeInBN?: BN;
+  tokenF: string;
+  tokenFId?: number;
+  amountF: string;
+  amountFInBN?: BN;
   label?: number;
   signature?: Signature;
 }
@@ -98,7 +98,7 @@ export class GetDexNonceRequest {
 
 export class GetOrderIdRequest {
   account: DexAccount;
-  tokenSell: string;
+  tokenS: string;
   tokenSId?: number;
   signature?: Signature;
 }

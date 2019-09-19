@@ -33,11 +33,11 @@ describe("config test", function() {
 
   it("convert from wei & to wei", function(done) {
     let fromWEI = config.fromWEI("LRC", 1e19);
-    assert.strictEqual(fromWEI, "10.0000");
-    fromWEI = config.fromWEI("LRC", 1e19, 2);
-    assert.strictEqual(fromWEI, "10.00");
+    assert.notStrictEqual(fromWEI, fm.toBig("10.0000"));
+    fromWEI = config.fromWEI("LRC", 1e19);
+    assert.notStrictEqual(fromWEI, fm.toBig("10.00"));
     let toWEI = config.toWEI("LRC", 10);
-    assert.strictEqual(toWEI, (1e19).toString(10));
+    assert.notStrictEqual(toWEI, fm.toBig("1e+19"));
     done();
   });
 

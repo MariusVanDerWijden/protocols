@@ -201,20 +201,20 @@ export class Exchange {
     } else {
       token = config.getTokenByAddress(withdrawal.token);
     }
-    if (!withdrawal.feeToken.startsWith("0x")) {
-      feeToken = config.getTokenBySymbol(withdrawal.feeToken);
+    if (!withdrawal.tokenF.startsWith("0x")) {
+      feeToken = config.getTokenBySymbol(withdrawal.tokenF);
     } else {
-      feeToken = config.getTokenByAddress(withdrawal.feeToken);
+      feeToken = config.getTokenByAddress(withdrawal.tokenF);
     }
-    let bigNumber = fm.toBig(withdrawal.amount).times("1e" + token.digits);
     withdrawal.tokenId = token.id;
-    withdrawal.token = token.symbol;
-    withdrawal.amountInBN = fm.toBN(bigNumber);
+    withdrawal.token = token.address;
+    withdrawal.amountInBN = config.toWEI(token.symbol, withdrawal.amount);
+    withdrawal.amount = withdrawal.amountInBN.toString(10);
 
-    bigNumber = fm.toBig(withdrawal.fee).times("1e" + feeToken.digits);
-    withdrawal.feeTokenId = token.id;
-    withdrawal.feeToken = feeToken.symbol;
-    withdrawal.feeInBN = fm.toBN(bigNumber);
+    withdrawal.tokenFId = feeToken.id;
+    withdrawal.tokenF = feeToken.address;
+    withdrawal.amountFInBN = config.toWEI(feeToken.symbol, withdrawal.amountF);
+    withdrawal.amountF = withdrawal.amountFInBN.toString(10);
 
     withdrawal.label =
       withdrawal.label !== undefined ? withdrawal.label : config.getLabel();
@@ -234,8 +234,8 @@ export class Exchange {
       account.accountId,
       withdrawal.tokenId,
       withdrawal.amountInBN,
-      withdrawal.feeTokenId,
-      withdrawal.feeInBN,
+      withdrawal.tokenFId,
+      withdrawal.amountFInBN,
       withdrawal.label,
       account.nonce
     ];
@@ -317,10 +317,11 @@ export class Exchange {
     order.tokenSId = tokenSell.id;
     order.tokenBId = tokenBuy.id;
 
-    let bigNumber = fm.toBig(order.amountS).times("1e" + tokenSell.digits);
-    order.amountSInBN = fm.toBN(bigNumber);
-    bigNumber = fm.toBig(order.amountB).times("1e" + tokenBuy.digits);
-    order.amountBInBN = fm.toBN(bigNumber);
+    order.amountSInBN = config.toWEI(tokenSell.symbol, order.amountS);
+    order.amountS = order.amountSInBN.toString(10);
+
+    order.amountBInBN = config.toWEI(tokenBuy.symbol, order.amountB);
+    order.amountB = order.amountBInBN.toString(10);
 
     order.exchangeId =
       order.exchangeId !== undefined
@@ -332,7 +333,7 @@ export class Exchange {
       order.maxFeeBips !== undefined
         ? order.maxFeeBips
         : config.getMaxFeeBips();
-    order.allOrNone = order.allOrNone ? order.allOrNone : false;
+    order.allOrNone = order.allOrNone !== undefined ? order.allOrNone : false;
 
     order.feeBips =
       order.feeBips !== undefined ? order.feeBips : order.maxFeeBips;
@@ -370,8 +371,8 @@ export class Exchange {
       account.accountId,
       cancel.orderTokenId,
       cancel.orderId,
-      cancel.feeTokenId,
-      cancel.feeInBN,
+      cancel.tokenFId,
+      cancel.amountFInBN,
       cancel.label,
       account.nonce
     ];
@@ -396,16 +397,18 @@ export class Exchange {
     } else {
       orderToken = config.getTokenByAddress(cancel.orderToken);
     }
-    if (!cancel.feeToken.startsWith("0x")) {
-      feeToken = config.getTokenBySymbol(cancel.feeToken);
+    if (!cancel.tokenF.startsWith("0x")) {
+      feeToken = config.getTokenBySymbol(cancel.tokenF);
     } else {
-      feeToken = config.getTokenByAddress(cancel.feeToken);
+      feeToken = config.getTokenByAddress(cancel.tokenF);
     }
-    cancel.feeTokenId = feeToken.id;
+    cancel.tokenFId = feeToken.id;
+    cancel.tokenF = feeToken.symbol;
     cancel.orderTokenId = orderToken.id;
+    cancel.orderToken = orderToken.symbol;
 
-    let bigNumber = fm.toBig(cancel.fee).times("1e" + feeToken.digits);
-    cancel.feeInBN = fm.toBN(bigNumber);
+    cancel.amountFInBN = config.toWEI(feeToken.symbol, cancel.amountF);
+    cancel.amountF = cancel.amountFInBN.toString(10);
 
     cancel.label =
       cancel.label !== undefined ? cancel.label : config.getLabel();
@@ -468,10 +471,10 @@ export class Exchange {
     }
     const account = request.account;
     const hasher = Poseidon.createHash(3, 6, 53);
-    if (!request.tokenSell.startsWith("0x")) {
-      request.tokenSId = config.getTokenBySymbol(request.tokenSell).id;
+    if (!request.tokenS.startsWith("0x")) {
+      request.tokenSId = config.getTokenBySymbol(request.tokenS).id;
     } else {
-      request.tokenSId = config.getTokenByAddress(request.tokenSell).id;
+      request.tokenSId = config.getTokenByAddress(request.tokenS).id;
     }
     // Calculate hash
     const inputs = [account.accountId, request.tokenSId];
